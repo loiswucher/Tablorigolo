@@ -56,12 +56,15 @@
     padding:calc(10px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom)); gap:8px; overflow:hidden; }
   .topbar { display:flex; align-items:center; gap:10px; flex:0 0 auto; flex-wrap:wrap; }
   .topbar .spacer { flex:1; }
+  .topbar .btn { flex:0 0 auto; }
+  .topbar .info { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .topbar .info { font-weight:800; color:var(--ink); background:rgba(255,255,255,.75); border-radius:14px; padding:8px 14px; font-size:clamp(15px,2vw,19px); }
   .hint { flex:0 0 auto; text-align:center; font-weight:800; min-height:1.7em; font-size:clamp(17px,2.4vw,24px);
     color:#fff; text-shadow:0 2px 0 rgba(43,34,96,.35); margin:0; }
   .play { flex:1; min-height:0; display:grid; grid-template-columns:1fr minmax(270px,340px); gap:14px; }
   @media (orientation:portrait) { .play { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; } }
-  #board-wrap { min-width:0; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  #board-wrap { min-width:0; min-height:0; display:flex; align-items:center; justify-content:center; overflow:auto; }
+  #board { margin:auto; flex:0 0 auto; }
   #board { display:grid; gap:var(--gap); padding:14px; background:rgba(255,255,255,.6); border-radius:26px;
     box-shadow:0 10px 30px rgba(43,34,96,.22); --cell:48px; }
 
@@ -93,6 +96,38 @@
   .key:active { transform:translateY(4px); box-shadow:0 1px 0 rgba(43,34,96,.22); }
   .key.fn { background:#dfe6ff; font-size:clamp(22px,3.4vh,30px); }
   .pad .verify { grid-column:1 / -1; height:clamp(58px,10vh,84px); font-size:clamp(22px,3.4vh,32px); margin-top:6px; }
+
+
+  /* ---------- Téléphone / petits écrans ---------- */
+  @media (max-width:640px) {
+    #screen-game { padding:calc(6px + env(safe-area-inset-top)) 8px calc(6px + env(safe-area-inset-bottom)); gap:4px; }
+    .topbar { flex-wrap:nowrap; gap:6px; }
+    .topbar .btn { min-height:44px; padding:6px 12px; font-size:18px; border-radius:14px; box-shadow:0 3px 0 rgba(43,34,96,.22); }
+    .topbar .lbl { display:none; }
+    .topbar .info { padding:6px 10px; font-size:14px; }
+    .hint { font-size:15px; min-height:1.3em; }
+    #board { padding:8px; border-radius:18px; }
+    .pad { grid-template-columns:repeat(10,1fr); gap:5px; max-width:none; }
+    .pad .key { order:11; height:50px; font-size:24px; border-radius:12px; box-shadow:0 3px 0 rgba(43,34,96,.22); padding:0; }
+    .pad .key[data-d="1"] { order:1; } .pad .key[data-d="2"] { order:2; } .pad .key[data-d="3"] { order:3; }
+    .pad .key[data-d="4"] { order:4; } .pad .key[data-d="5"] { order:5; } .pad .key[data-d="6"] { order:6; }
+    .pad .key[data-d="7"] { order:7; } .pad .key[data-d="8"] { order:8; } .pad .key[data-d="9"] { order:9; }
+    .pad .key[data-d="0"] { order:10; }
+    .pad .key[data-act="del"] { order:11; grid-column:span 3; font-size:22px; }
+    .pad .key[data-act="next"] { order:12; grid-column:span 3; font-size:22px; }
+    .pad .verify { order:13; grid-column:span 4; height:50px; font-size:19px; margin-top:0; border-radius:12px; box-shadow:0 3px 0 rgba(43,34,96,.22); padding:0; }
+  }
+  /* téléphone en paysage : peu de hauteur */
+  @media (max-height:520px) and (orientation:landscape) {
+    #screen-game { gap:3px; padding-top:calc(4px + env(safe-area-inset-top)); padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
+    .topbar .btn { min-height:40px; padding:4px 12px; font-size:16px; }
+    .hint { font-size:15px; min-height:1.2em; }
+    .play { grid-template-columns:1fr minmax(230px,300px); gap:8px; }
+    .pad { gap:6px; }
+    .pad .key { height:40px; font-size:22px; border-radius:12px; }
+    .pad .verify { height:44px; font-size:19px; margin-top:2px; }
+    #board { padding:8px; }
+  }
 
   /* ---------- Victoire ---------- */
   #win { position:fixed; left:50%; bottom:calc(5vh + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:30;
@@ -145,11 +180,11 @@
 <!-- ============ JEU ============ -->
 <section id="screen-game" class="screen">
   <div class="topbar">
-    <button id="btn-settings" class="btn">⚙️ Réglages</button>
+    <button id="btn-settings" class="btn" aria-label="Réglages">⚙️<span class="lbl"> Réglages</span></button>
     <span id="info" class="info"></span>
     <span class="spacer"></span>
     <button id="btn-sound" class="btn" aria-label="Son">🔊</button>
-    <button id="btn-new" class="btn">🔄 Nouvelle grille</button>
+    <button id="btn-new" class="btn" aria-label="Nouvelle grille">🔄<span class="lbl"> Nouvelle grille</span></button>
   </div>
   <p id="hint" class="hint" aria-live="polite"></p>
   <div class="play">
@@ -569,10 +604,11 @@ function hideWin() { $('#win').classList.add('hidden'); }
 
 function fit() {
   if (!state) return;
-  const wrap = $('#board-wrap'), pad = 28 + 12, gap = 4;
+  const wrap = $('#board-wrap'), cs = getComputedStyle(board);
+  const pad = parseFloat(cs.paddingLeft) * 2 + 6, gap = 4;
   const w = wrap.clientWidth - pad - (state.g.cols - 1) * gap;
   const h = wrap.clientHeight - pad - (state.g.rows - 1) * gap;
-  const size = Math.max(26, Math.min(80, Math.floor(Math.min(w / state.g.cols, h / state.g.rows))));
+  const size = Math.max(14, Math.min(80, Math.floor(Math.min(w / state.g.cols, h / state.g.rows))));
   board.style.setProperty('--cell', size + 'px');
 }
 window.addEventListener('resize', () => { fit(); fxResize(); });
